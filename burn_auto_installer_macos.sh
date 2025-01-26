@@ -173,7 +173,7 @@ install_node() {
     else
       echo -e "${GREEN}⚙️  pm2 already installed.${RESET}"
         # Check if the instance exists
-        if pm2 list | grep -q "$NODE_PM2_NAME"; then
+        if pm2 list | grep -E "$NODE_PM2_NAME"; then
           echo
           echo -e "${YELLOW}⚙️  Stopping and deleting existing instance: $NODE_PM2_NAME${RESET}"
           pm2 stop $NODE_PM2_NAME >/dev/null 2>&1
@@ -213,11 +213,13 @@ tar -xzf executor-macosx-v0.${VERSION}.0-macosx.tar.gz || {
 }
 
 # Verify extraction success and binary existence
-if [ ! -d "executor" ] || [ ! -f "executor/executor/bin/executor" ]; then
-    echo -e "${RED}❌ Extraction failed. Executor binary not found after extraction.${RESET}"
-    exit 1
-else
+if [ -d "executor" ] && [ -f "$T3RN_DIR/executor/executor/bin/executor" ]; then
     echo -e "${GREEN}✅ Extraction successful. Executor binary found.${RESET}"
+else
+    echo -e "${RED}❌ Extraction failed. Executor binary not found.${RESET}"
+    echo -e "${CYAN}Contents of the extracted directory:${RESET}"
+    ls -R $T3RN_DIR/executor
+    exit 1
 fi
 
 # Cleanup
@@ -243,7 +245,7 @@ fi
 
     # Check if the extracted files contain 'executor'
     echo -e "${BLUE}⁉️  Checking if the extracted files or directories contain 'executor'...${RESET}"
-    if ls | grep -q 'executor'; then
+    if ls | grep -E 'executor'; then
         echo -e "${GREEN}✅  Check passed, found files or directories containing 'executor'.${RESET}"
     else
         echo -e "${RED}❌  No files or directories containing 'executor' were found, possibly incorrect file name.${RESET}"
