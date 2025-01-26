@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Color and icon definitions
+# Définition des couleurs et des icônes
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -8,7 +8,6 @@ CYAN='\033[0;36m'
 YELLOW='\033[1;33m'
 MAGENTA='\033[0;35m'
 RESET='\033[0m'
-ICON_TELEGRAM="🚀"
 ICON_INSTALL="🛠️"
 ICON_LOGS="📄"
 ICON_RESTART="🔄"
@@ -20,10 +19,8 @@ ICON_VIEW="👀"
 ICON_DOLLAR="💳"
 ICON_UPDATE="⛽️"
 
-
-
-# Global variables
-PROJCET_NAME="t3rn"
+# Variables globales
+PROJECT_NAME="t3rn"
 VERSION=$(curl -s https://api.github.com/repos/t3rn/executor-release/releases/latest | grep 'tag_name' | cut -d\" -f4 | grep -oP '(?<=v0\.)\d+')
 
 T3RN_DIR="$HOME/t3rn"
@@ -31,7 +28,7 @@ ENV_FILE="$T3RN_DIR/.env"
 LOGFILE="$T3RN_DIR/executor.log"
 NODE_PM2_NAME="executor"
 
-# Draw menu borders and telegram icon
+# Fonctions pour afficher les bordures du menu
 draw_top_border() {
     echo -e "${CYAN}╔══════════════════════════════════════════════════════════════════════════╗${RESET}"
 }
@@ -40,9 +37,6 @@ draw_middle_border() {
 }
 draw_bottom_border() {
     echo -e "${CYAN}╚══════════════════════════════════════════════════════════════════════════╝${RESET}"
-}
-print_telegram_icon() {
-    echo -e "          ${MAGENTA}${ICON_DISCORD} Join us on Disord!${RESET}"
 }
 display_ascii() {
     echo -e "${RED}    __  __       _       __        _______  _       _      _            ${RESET}"    
@@ -54,585 +48,264 @@ display_ascii() {
     echo -e "${CYAN}                          M O L F O 9 I Y A                             ${RESET}"
 }
 
+# Fonction d'installation
+install_node() {
+    echo -e "${CYAN}🛠️  Installation du nœud en cours...${RESET}"
+    
+    # Mise à jour des outils nécessaires
+    if ! command -v brew &>/dev/null; then
+        echo -e "${RED}Homebrew n'est pas installé. Installez-le d'abord : https://brew.sh/${RESET}"
+        exit 1
+    fi
 
+    brew update
+    
+    # Création du dossier t3rn
+    if [ ! -d "$T3RN_DIR" ]; then
+        mkdir -p "$T3RN_DIR"
+        echo -e "${CYAN}📂 Dossier $T3RN_DIR créé.${RESET}"
+    else
+        echo -e "${RED}📂 Le dossier $T3RN_DIR existe déjà.${RESET}"
+        rm -rf "$T3RN_DIR/executor"
+        rm -rf "$T3RN_DIR/executor-macos-v0.$VERSION.0.tar.gz"
+    fi
+    cd "$T3RN_DIR"
 
+    # Installation des dépendances avec npm
+    if ! command -v npm &>/dev/null; then
+        echo -e "${RED}Node.js et npm ne sont pas installés. Installation en cours...${RESET}"
+        brew install node
+    fi
 
+    npm install -g ethers dotenv pm2
 
-# Display main menu
+    # Téléchargement et extraction
+    echo -e "${CYAN}⬇️  Téléchargement de l'exécuteur...${RESET}"
+    curl -L -O "https://github.com/t3rn/executor-release/releases/download/v0.$VERSION.0/executor-macos-v0.$VERSION.0.tar.gz"
+
+    echo -e "${YELLOW}🧰 Extraction du fichier...${RESET}"
+    tar -xvzf "executor-macos-v0.$VERSION.0.tar.gz"
+
+    if [ $? -ne 0 ]; then
+        echo -e "${RED}❌ Échec de l'extraction.${RESET}"
+        exit 1
+    fi
+
+    # Vérification ou création du fichier .env
+    if [ ! -f "$ENV_FILE" ]; then
+        echo -e "${RED}❌ Fichier .env non trouvé. Création en cours...${RESET}"
+        echo -ne "${YELLOW}🔑 Entrez votre clé privée : ${RESET}"
+        read -s PRIVATE_KEY_LOCAL
+        echo "PRIVATE_KEY_LOCAL=$PRIVATE_KEY_LOCAL" > "$ENV_FILE"
+    fi
+    source "$ENV_FILE"
+
+    # Lancement du nœud avec pm2
+    pm2 start ./executor/executor/bin/executor --name "$NODE_PM2_NAME" --log "$LOGFILE"
+    echo -e "${GREEN}✅ Installation terminée.${RESET}"
+}
+
+# Affichage des logs
+view_logs() {
+    echo -e "${GREEN}📄 Affichage des logs...${RESET}"
+    tail -n 50 "$LOGFILE"
+}
+
+# Menu principal
 show_menu() {
     clear
     draw_top_border
     display_ascii
     draw_middle_border
-    print_telegram_icon
-    echo -e "    ${BLUE}Join us on Disord: ${YELLOW}https://discord.gg/uJEeSe9E${RESET}"
-    draw_middle_border
-    echo -e "                ${GREEN}Node Manager for ${PROJCET_NAME}${RESET}"
-    echo -e "    ${YELLOW}Please choose an option:${RESET}"
-    echo -e "    ${CYAN}1.${RESET} ${ICON_INSTALL}  Install Node"
-    echo -e "    ${CYAN}2.${RESET} ${ICON_LOGS} View Logs"
-    echo -e "    ${CYAN}3.${RESET} ${ICON_RESTART} Restart Node"
-    echo -e "    ${CYAN}4.${RESET} ${ICON_STOP}  Stop Node"
-    echo -e "    ${CYAN}5.${RESET} ${ICON_REMOVE}   Remove Node"
-    echo -e "    ${CYAN}6.${RESET} ${ICON_START}  Start Node"
-    echo -e "    ${CYAN}7.${RESET} ${ICON_DOLLAR} Check Wallet Balance"
-    
-    
-    echo -e "    ${CYAN}0.${RESET} ${ICON_EXIT} Exit"
+    echo -e "    ${GREEN}Gestionnaire de nœuds pour ${PROJECT_NAME}${RESET}"
+    echo -e "    ${YELLOW}Veuillez choisir une option :${RESET}"
+    echo -e "    ${CYAN}1.${RESET} ${ICON_INSTALL} Installer le nœud"
+    echo -e "    ${CYAN}2.${RESET} ${ICON_LOGS} Afficher les logs"
+    echo -e "    ${CYAN}0.${RESET} ${ICON_EXIT} Quitter"
     draw_bottom_border
-    echo -ne "${YELLOW}Enter a command number [0-7]:${RESET} "
+    echo -ne "${YELLOW}Entrez un numéro [0-2] :${RESET} "
     read choice
 }
 
-
-# Install node function with registration link and check
-install_node() {
-    echo 
-    echo -e "${CYAN}To proceed, ensure you have at least ${RED}0.1 BRN ${CYAN}in your wallet.${RESET}"
-    echo -e "${CYAN}Claim free BRN from the faucet here: https://faucet.brn.t3rn.io/${RESET}"
-    
-    echo 
-    echo -ne "${YELLOW}Do you have sufficient BRN balance in your wallet? (y/n): ${RESET}"
-    read registered
-
-    if [[ "$registered" != "y" && "$registered" != "Y" ]]; then
-        echo -e "${RED}You need at least 0.1 BRN to continue. Please claim some from the faucet.${RESET}"
-        read -p "Press Enter to return to the menu..."
-        return
-    fi
-
-    echo
-    echo -e "${GREEN}🛠️  Installing node...${RESET}"
-     brew update
-    cd $HOME
-    
-
-    echo
-    # Create t3rn Folder
-    if [ ! -d "$T3RN_DIR" ]; then
-        mkdir -p "$T3RN_DIR"
-        cd "$T3RN_DIR"
-        echo -e "${CYAN}🗂️  Folder $T3RN_DIR created.${RESET}"
-    else
-        echo -e "${RED}🗂️  Folder $T3RN_DIR already exist.${RESET}"
-        rm -fr $T3RN_DIR/executor
-        rm -fr $T3RN_DIR/executor-macosx-v0.$VERSION.0-macosx.tar.gz
-    fi
-    echo 
-
-    cd "$T3RN_DIR"
-      
-    
-    # Check & Install ethers
-    echo
-    if npm list ethers >/dev/null 2>&1; then
-      echo -e "${GREEN}⚙️  ethers is already installed${RESET}"
-    else
-      echo -e "${RED}⚙️  ethers is not installed${RESET}"
-        echo -e "${GREEN}🛠️  Installing ethers...${RESET}"
-      npm install -g ethers
-      if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ ethers successfully installed${RESET}"
-      else
-        echo -e "${RED}❌ Failed to install ethers${RESET}"
-        exit 1
-      fi
-    fi
-    echo 
+# Boucle du menu
+while true; do
+    show_menu
+    case $choice in
+        1) install_node ;;
+        2) view_logs ;;
+        0) echo -e "${CYAN}👋 Au revoir.${RESET}"; exit 0 ;;
+        *) echo -e "${RED}❌ Choix invalide.${RESET}" ;;
+    esac
+done
 
 
-    #Check & Install dotenv
-    echo
-    if npm list dotenv >/dev/null 2>&1; then
-      echo -e "${GREEN}⚙️  dotenv is already installed${RESET}"
-    else
-      echo -e "${RED}⚙️  dotenv is not installed${RESET}"
-        echo -e "${GREEN}🛠️  Installing dotenv...${RESET}"
-      npm  install -g dotenv
-      if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ dotenv successfully installed${RESET}"
-      else
-        echo -e "${RED}❌ Failed to install dotenv${RESET}"
-        exit 1
-      fi
-    fi
-    echo
+#!/bin/bash
 
+# --- Colors ---
+RESET="\e[0m"
+RED="\e[31m"
+GREEN="\e[32m"
+YELLOW="\e[33m"
+BLUE="\e[34m"
+CYAN="\e[36m"
 
-    # Check & Install pm2
-    echo
-    if ! command -v pm2 &> /dev/null; then
-      echo -e "${RED}⚙️  pm2 is not installed. Processing installation${RESET}"
-      npm install -g pm2
-      if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ pm2 successfully installed${RESET}"
-      else
-        echo -e "${RED}❌ Failed to install pm2${RESET}"
-        exit 1
-      fi
-    else
-      echo -e "${GREEN}⚙️  pm2 already installed.${RESET}"
-        # Check if the instance exists
-        if pm2 list | grep -E "$NODE_PM2_NAME"; then
-          echo
-          echo -e "${YELLOW}⚙️  Stopping and deleting existing instance: $NODE_PM2_NAME${RESET}"
-          pm2 stop $NODE_PM2_NAME >/dev/null 2>&1
-          pm2 delete $NODE_PM2_NAME >/dev/null 2>&1
-        fi
-    fi
-    echo
+# --- Global Variables ---
+NODE_PM2_NAME="your_node_process_name"
+T3RN_DIR="/path/to/t3rn"
+ENV_FILE="$T3RN_DIR/.env"
 
-    
-    
-# Download the executor file
-echo -e "${CYAN}⬇️   Downloading executor-macosx-v0.${VERSION}.0-macosx.tar.gz${RESET}"
-curl -L -O https://github.com/t3rn/executor-release/releases/download/v${VERSION}/executor-macosx-v0.${VERSION}.0-macosx.tar.gz
-
-# Verify the downloaded file
-if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ Failed to download executor-macosx-v0.${VERSION}.0-macosx.tar.gz. Please check your internet connection or the URL.${RESET}"
-    exit 1
-fi
-
-# Check the file size to ensure the download is valid
-FILE_SIZE=$(stat -f%z executor-macosx-v0.${VERSION}.0-macosx.tar.gz 2>/dev/null || stat -c%s executor-macosx-v0.${VERSION}.0-macosx.tar.gz)
-if [ -z "$FILE_SIZE" ] || [ "$FILE_SIZE" -lt 1024 ]; then
-    echo -e "${RED}❌ Downloaded file is too small. Likely corrupted.${RESET}"
-    rm -f executor-macosx-v0.${VERSION}.0-macosx.tar.gz
-    exit 1
-fi
-
-echo -e "${GREEN}✅ File downloaded successfully.${RESET}"
-
-# Extract the file
-echo -e "${YELLOW}🧰 Extracting executor-macosx-v0.${VERSION}.0-macosx.tar.gz...${RESET}"
-tar -xzf executor-macosx-v0.${VERSION}.0-macosx.tar.gz || {
-    echo -e "${RED}❌ Extraction failed. Check the archive format.${RESET}"
-    file executor-macosx-v0.${VERSION}.0-macosx.tar.gz
-    exit 1
+# --- Helper Functions ---
+pause() {
+    read -p "Press Enter to continue..."
 }
 
-# Verify extraction success and binary existence
-if [ -d "executor" ] && [ -f "$T3RN_DIR/executor/executor/bin/executor" ]; then
-    echo -e "${GREEN}✅ Extraction successful. Executor binary found.${RESET}"
-else
-    echo -e "${RED}❌ Extraction failed. Executor binary not found.${RESET}"
-    echo -e "${CYAN}Contents of the extracted directory:${RESET}"
-    ls -R $T3RN_DIR/executor
-    exit 1
-fi
-
-# Cleanup
-rm -f executor-macosx-v0.${VERSION}.0-macosx.tar.gz
-
+success_message() {
+    echo -e "${GREEN}✅ $1${RESET}"
 }
 
-    # Check if extraction was successful
-    if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅  Extraction successful.${RESET}"
-    else
-        echo -e "${RED}❌  Extraction failed, please check the tar.gz file.${RESET}"
-        exit 1
-    fi
-	if [ ! -f "$T3RN_DIR/executor/executor/bin/executor" ]; then
-    echo -e "${RED}❌ Executor binary not found after extraction. Exiting.${RESET}"
-    exit 1
-else
-    echo -e "${GREEN}✅ Executor binary found.${RESET}"
-fi
-    echo
-
-
-    # Check if the extracted files contain 'executor'
-    echo -e "${BLUE}⁉️  Checking if the extracted files or directories contain 'executor'...${RESET}"
-    if ls | grep -E 'executor'; then
-        echo -e "${GREEN}✅  Check passed, found files or directories containing 'executor'.${RESET}"
-    else
-        echo -e "${RED}❌  No files or directories containing 'executor' were found, possibly incorrect file name.${RESET}"
-        exit 1
-    fi
-    echo
-
-
-    # Verify .env file + private key
-    if [ -f "$ENV_FILE" ]; then
-        echo
-        echo -e "${GREEN}✅ $ENV_FILE  found.${RESET}"
-        
-        # load environement variables
-        source "$ENV_FILE"
-        
-        if [ -n "$PRIVATE_KEY_LOCAL" ]; then
-            echo
-            echo -e "${GREEN}🔑 PRIVATE_KEY_LOCAL is already set in $ENV_FILE.${RESET}"
-        else
-            echo -e "${RED}❌ PRIVATE_KEY_LOCAL variable is not set !!!${RESET}"
-            echo
-        fi
-    else
-      echo -e "${RED}❌ $ENV_FILE not found !!!${RESET}"
-      echo 
-      echo 
-      echo -ne "${RED}🔑  Enter your EVM private key  [Burner Wallet]:${RESET} "
-      read -s  PRIVATE_KEY_LOCAL
-      echo "PRIVATE_KEY_LOCAL=${PRIVATE_KEY_LOCAL}" > $ENV_FILE
-      source "$ENV_FILE"
-      echo -e "\n${GREEN}✅ Private key has been set.${RESET}"
-      echo 
-    fi
-    echo
-
-
-    export NODE_ENV=testnet
-    export LOG_LEVEL=debug
-	export LOG_PRETTY=false
-	export L3_NETWORK=l1rn
-	export L3_ENABLED=true
-	export PRICER_URL='https://pricer.t1rn.io/'
-	export PRICER_CORS_ORIGINS='http://localhost:5173,https://bridge.t1rn.io'
-    export EXECUTOR_PROCESS_ORDERS_ENABLED=true
-	export EXECUTOR_PROCESS_ORDERS_API_ENABLED=false
-	export EXECUTOR_PROCESS_CLAIMS_ENABLED=true
-	export EXECUTOR_PROCESS_CLAIMS_API_ENABLED=false
-	export EXECUTOR_PROCESS_BIDS_ENABLED=true
-	export EXECUTOR_PROCESS_BIDS_API_ENABLED=false
-	export ENABLE_PROCESSING_VIA_RPC=true
-	export EXECUTOR_MAX_L3_GAS_PRICE=2000
-    export PRIVATE_KEY_LOCAL=$PRIVATE_KEY_LOCAL
-    export ENABLED_NETWORKS='arbitrum-sepolia,base-sepolia,blast-sepolia,optimism-sepolia,l1rn'
-	export RPC_ENDPOINTS_ARBT='https://arbitrum-sepolia-rpc.publicnode.com/'
-    export RPC_ENDPOINTS_BSSP='https://base-sepolia-rpc.publicnode.com/'
-	export RPC_ENDPOINTS_BLSS='https://sepolia.blast.io'
-    export RPC_ENDPOINTS_OPSP='https://sepolia.optimism.io/'
-	export RPC_ENDPOINTS_L1RN='https://brn.rpc.caldera.xyz/'
-    export EXECUTOR_PROCESS_PENDING_ORDERS_FROM_API=false
-	export AWS_SDK_JS_SUPPRESS_MAINTENANCE_MODE_MESSAGE=1
-
-
-
-# Start the executor process with PM2
-pm2 start "$T3RN_DIR/executor/executor/bin/executor" \
-    --name "$NODE_PM2_NAME" \
-    --log "$LOGFILE" || {
-    echo -e "${RED}❌ Failed to start executor with PM2. Exiting.${RESET}"
-    exit 1
+error_message() {
+    echo -e "${RED}❌ $1${RESET}"
 }
 
-echo -e "${GREEN}✅ Executor started successfully with PM2.${RESET}"
-}
-
-
-# View logs function
-view_logs() {
-    echo -e "${GREEN}📄 Viewing logs...${RESET}"
-    #pm2 logs $NODE_PM2_NAME --lines 50 
-    tail -n 50 $LOGFILE
-    
-    echo
-    read -p "Press Enter to return to the menu..."
-}
-
-# Restart node function
+# --- Node Control Functions ---
 restart_node() {
     echo -e "${GREEN}🔄 Restarting node...${RESET}"
-    pm2 restart $NODE_PM2_NAME
-    echo -e "${GREEN}✅ Node restarted.${RESET}"
-    read -p "Press Enter to return to the menu..."
+    pm2 restart $NODE_PM2_NAME && success_message "Node restarted." || error_message "Failed to restart node."
+    pause
 }
 
-# Stop node function
 stop_node() {
-    echo 
     echo -e "${YELLOW}⏹️  Stopping node...${RESET}"
-    echo 
-    pm2 stop $NODE_PM2_NAME
-    echo -e "${GREEN}✅ Node stopped.${RESET}"
-    
-    echo
-    echo
-    echo
-    read -p "Press Enter to return to the menu..."
+    pm2 stop $NODE_PM2_NAME && success_message "Node stopped." || error_message "Failed to stop node."
+    pause
 }
 
-# Start node function
 start_node() {
     echo -e "${GREEN}▶️ Starting node...${RESET}"
-    pm2 start $NODE_PM2_NAME
-    echo -e "${GREEN}✅ Node started.${RESET}"
-    read -p "Press Enter to return to the menu..."
+    pm2 start $NODE_PM2_NAME && success_message "Node started." || error_message "Failed to start node."
+    pause
 }
 
-# Remove node function
 remove_node() {
-    echo 
     echo -e "${YELLOW}🗑️  Removing node...${RESET}"
-    echo
     pm2 delete $NODE_PM2_NAME
-    echo
-    rm -fr "$T3RN_DIR/executor" "$T3RN_DIR/executor.log" "$T3RN_DIR/getBalance.js" "$T3RN_DIR/.env" $T3RN_DIR/*-macosx.tar.gz
-    
-    echo
-    echo -e "${GREEN}✅ Node removed.${RESET}"
-    
-    
-    
-    echo
-    echo
-    echo
-    read -p "Press Enter to return to the menu..."
+    rm -rf "$T3RN_DIR/executor" "$T3RN_DIR/executor.log" "$T3RN_DIR/getBalance.js" "$T3RN_DIR/.env" $T3RN_DIR/*.tar.gz
+    success_message "Node removed."
+    pause
 }
 
-# Check wallet balance function
+# --- Wallet Balance Function ---
 check_wallet_balance() {
-    echo -e "${BLUE}🔌  Checking js dependencies...${RESET}"
-    echo
+    echo -e "${BLUE}🔌  Checking wallet balance...${RESET}"
+    cd "$T3RN_DIR" || { error_message "Directory not found!"; exit 1; }
 
-    # Install js 
-    #npm init -y
-    
-    cd "$T3RN_DIR"  
+    # Check and install dependencies
+    for package in ethers dotenv; do
+        if npm list "$package" >/dev/null 2>&1; then
+            success_message "$package is already installed."
+        else
+            echo -e "${GREEN}Installing $package...${RESET}"
+            npm install "$package" || { error_message "Failed to install $package"; exit 1; }
+        fi
+    done
 
-
-    # Check & Install ethers
-    if npm list ethers >/dev/null 2>&1; then
-      echo -e "${GREEN}✅  ethers is already installed${RESET}"
-    else
-      echo -e "${RED}⚙️  ethers is not installed${RESET}"
-        echo -e "${GREEN}🛠️  Installing ethers...${RESET}"
-      npm install ethers
-      if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ ethers successfully installed${RESET}"
-      else
-        echo -e "${RED}❌ Failed to install ethers${RESET}"
-        exit 1
-      fi
-    fi
-    echo
-
-
-    #Check & Install dotenv
-    if npm list dotenv >/dev/null 2>&1; then
-      echo -e "${GREEN}✅  dotenv is already installed${RESET}"
-    else
-      echo -e "${RED}⚙️  dotenv is not installed${RESET}"
-        echo -e "${GREEN}🛠️  Installing dotenv...${RESET}"
-      npm install dotenv
-      if [ $? -eq 0 ]; then
-        echo -e "${GREEN}✅ dotenv successfully installed${RESET}"
-      else
-        echo -e "${RED}❌ Failed to install dotenv${RESET}"
-        exit 1
-      fi
-    fi
-     echo
-    
-    
-
-    # Load .env variable -> Private Key
+    # Load environment variables
     if [ -f "$ENV_FILE" ]; then
         source "$ENV_FILE"
     else
-        echo -e "${RED}⚠️  .env file not found!${RESET}"
-        read -sp "Please enter your private key: " PRIVATE_KEY
+        error_message ".env file not found!"
+        read -sp "Enter your private key: " PRIVATE_KEY_LOCAL
         echo "PRIVATE_KEY_LOCAL=${PRIVATE_KEY_LOCAL}" >> .env
-        echo
     fi
 
-
-    # Verify if private key is set
+    # Validate private key
     if [ -z "$PRIVATE_KEY_LOCAL" ]; then
-        echo -e "${RED}❌ Private key is not provided. Exiting...${RESET}"
+        error_message "Private key not provided. Exiting..."
         exit 1
-    else
-        
-        generate_getBalance_js_file
-        echo
-
-        echo -e "${BLUE}＄ Checking wallet balance...${RESET}"
-        echo
-        
-        #BRN
-        echo -e "${BLUE}⏱️  Checking BRN network...${RESET}"
-        network="brn"
-        node getBalance.js $network
-        echo
-
-
-        #Sepolia
-        echo -e "${BLUE}⏱️  Checking Sepolia network...${RESET}"
-        network="sepolia"
-        node getBalance.js $network
-        echo
-
-
-        #Base
-        echo -e "${BLUE}⏱️  Checking Base network...${RESET}"
-        network="base_sepolia"
-        node getBalance.js $network
-        echo
-
-
-        #Optimism
-        echo -e "${BLUE}⏱️  Checking Optimism network...${RESET}"
-        network="op_sepolia"
-        node getBalance.js $network
-        echo
-
-
-        #Arbitrum
-        echo -e "${BLUE}⏱️  Checking Arbitrum network...${RESET}"
-        network="arbitrum_sepolia"
-        node getBalance.js $network
-        echo
-
-
-        #Blast
-        echo -e "${BLUE}⏱️  Checking Blast network...${RESET}"
-        network="blast_sepolia"
-        node getBalance.js $network
-        echo
-        
     fi
 
+    # Generate getBalance.js if missing
+    generate_getBalance_js_file
 
-    
+    # Check balance on networks
+    for network in brn sepolia base_sepolia op_sepolia arbitrum_sepolia blast_sepolia; do
+        echo -e "${BLUE}⏱️  Checking $network network...${RESET}"
+        node getBalance.js "$network"
+        echo
+    done
 
-
-    read -p "Press Enter to return to the menu..."
+    pause
 }
-
-
-
 
 generate_getBalance_js_file() {
     echo -e "${CYAN}📃 Generating getBalance.js file...${RESET}"
-    echo
-
-    cd "$T3RN_DIR"
-
-
-    # Génération du fichier getBalance.js
-    cat > getBalance.js << 'EOF'
+    cat > "$T3RN_DIR/getBalance.js" << 'EOF'
 const { ethers } = require("ethers");
 require("dotenv").config();
 
 const NETWORKS = {
-  sepolia: "https://ethereum-sepolia-rpc.publicnode.com", // Standard Sepolia
-  base_sepolia: "https://sepolia.base.org", // Base Sepolia
-  op_sepolia: "https://optimism-sepolia-rpc.publicnode.com", // Optimism Sepolia
-  arbitrum_sepolia: "https://arbitrum-sepolia-rpc.publicnode.com", // Arbitrum Sepolia
-  blast_sepolia: "https://sepolia.blast.io", // Blast Sepolia
-  brn: "https://brn.rpc.caldera.xyz/http", // BRN network
+  sepolia: "https://ethereum-sepolia-rpc.publicnode.com",
+  base_sepolia: "https://sepolia.base.org",
+  op_sepolia: "https://optimism-sepolia-rpc.publicnode.com",
+  arbitrum_sepolia: "https://arbitrum-sepolia-rpc.publicnode.com",
+  blast_sepolia: "https://sepolia.blast.io",
+  brn: "https://brn.rpc.caldera.xyz/http",
 };
 
-// Colors for pretty console outputs
-const COLORS = {
-  RESET: "\x1b[0m",
-  GREEN: "\x1b[32m",
-  BLUE: "\x1b[34m",
-  CYAN: "\x1b[36m",
-  YELLOW: "\x1b[33m",
-  MAGENTA: "\x1b[35m",
-};
-
-// Function to get the ETH balance for the given private key and network
 async function getEthBalance(pk, network) {
   const rpcUrl = NETWORKS[network.toLowerCase()];
   if (!rpcUrl) {
-    console.error(
-      `Invalid network: ${network}. Supported networks: ${Object.keys(
-        NETWORKS
-      ).join(", ")}`
-    );
+    console.error(`Invalid network: ${network}.`);
     return;
   }
 
   try {
-    // Validate the private key format
-    if (!ethers.isHexString(pk) || pk.length !== 66) {
-      console.error("Invalid private key format.");
-      return;
-    }
-
-    // Create wallet from private key
     const wallet = new ethers.Wallet(pk);
-
-    // Derive the public address from the wallet
-    const address = wallet.address;
-
-    // Create a provider for the specified network
     const provider = new ethers.JsonRpcProvider(rpcUrl);
-
-    // Fetch the ETH balance
-    const balance = await provider.getBalance(address);
-
-    // Convert the balance from wei to ETH
-    const balanceInEth = ethers.formatEther(balance);
-
-    // Adjust token label for BRN network
-    const token = network !== "brn" ? "ETH" : "BRN";
-
-    // Log the balance in a formatted way
-    console.log(
-      `The balance of ${address} on ${COLORS.CYAN}${network.toUpperCase()}${COLORS.RESET} is: ${COLORS.GREEN}${parseFloat(balanceInEth).toFixed(4)}${COLORS.RESET} ${token}`
-    );
+    const balance = await provider.getBalance(wallet.address);
+    console.log(`Balance on ${network.toUpperCase()}: ${ethers.formatEther(balance)} ETH`);
   } catch (error) {
-    console.error("Error fetching the balance:", error);
+    console.error("Error:", error);
   }
 }
 
-// If the script is run directly
-if (require.main === module) {
-  const privateKey = process.env.PRIVATE_KEY_LOCAL; // Retrieve the private key from .env
-  const net = process.argv[2] || "sepolia"; // Default to 'sepolia' if no network is provided
-
-  if (!privateKey) {
-    console.error("PRIVATE_KEY_LOCAL is not set in the .env file");
-    process.exit(1);
-  }
-
-  getEthBalance(privateKey, net); // Call the function with the private key and network
+const privateKey = process.env.PRIVATE_KEY_LOCAL;
+const net = process.argv[2] || "sepolia";
+if (!privateKey) {
+  console.error("PRIVATE_KEY_LOCAL is not set in the .env file");
+  process.exit(1);
 }
+
+getEthBalance(privateKey, net);
 EOF
-
-    echo -e "${GREEN}✅ getBalance.js file has been generated successfully.${RESET}"
-    echo 
+    success_message "getBalance.js file generated."
 }
 
+# --- Menu ---
+show_menu() {
+    clear
+    echo -e "${CYAN}Node Management Script${RESET}"
+    echo "1) Restart Node"
+    echo "2) Stop Node"
+    echo "3) Start Node"
+    echo "4) Remove Node"
+    echo "5) Check Wallet Balance"
+    echo "0) Exit"
+    echo
+    read -p "Enter your choice: " choice
+}
 
-
-# Main menu loop
+# --- Main Loop ---
 while true; do
     show_menu
     case $choice in
-        1)
-            install_node
-            ;;
-        2)
-            view_logs
-            ;;
-        3)
-            restart_node
-            ;;
-        4)
-            stop_node
-            ;;
-        5)
-            remove_node
-            ;;    
-        6)
-            start_node
-            ;;
-        7)
-            check_wallet_balance
-            ;;
-        0)
-            echo -e "${GREEN}❌ Exiting...${RESET}"
-            exit 0
-            ;;
-        *)
-            echo -e "${RED}❌ Invalid input. Please try again.${RESET}"
-            read -p "Press Enter to continue..."
-            ;;
+        1) restart_node ;;
+        2) stop_node ;;
+        3) start_node ;;
+        4) remove_node ;;
+        5) check_wallet_balance ;;
+        0) echo -e "${GREEN}Exiting...${RESET}"; exit 0 ;;
+        *) error_message "Invalid choice. Try again."; pause ;;
     esac
 done
+
