@@ -185,12 +185,14 @@ install_node() {
     
     
     echo -e "${CYAN}⬇️   Downloading executor-macosx-v0.$VERSION.0-macosx.tar.gz${RESET}"
-    curl -L -O https://github.com/t3rn/executor-release/releases/download/v0.$VERSION.0/executor-macosx-v0.$VERSION.0-macosx.tar.gz;
+    curl -L -O https://github.com/t3rn/executor-release/releases/download/v0.47.0/executor-macosx-v0.47.0.tar.gz;
     echo
 
     echo -e "${YELLOW}🧰 Extracting the file...${RESET}";
-    tar -xzf executor-macosx-v0.$VERSION.0-macosx.tar.gz;
-    echo
+    tar -xzf executor-macosx-v0.47.0-macosx.tar.gz || {
+    echo -e "${RED}❌ Extraction failed. Check the archive format.${RESET}"
+    exit 1
+}
 
     # Check if extraction was successful
     if [ $? -eq 0 ]; then
@@ -199,6 +201,12 @@ install_node() {
         echo -e "${RED}❌  Extraction failed, please check the tar.gz file.${RESET}"
         exit 1
     fi
+	if [ ! -f "$T3RN_DIR/executor/executor/bin/executor" ]; then
+    echo -e "${RED}❌ Executor binary not found after extraction. Exiting.${RESET}"
+    exit 1
+else
+    echo -e "${GREEN}✅ Executor binary found.${RESET}"
+fi
     echo
 
 
@@ -269,14 +277,15 @@ install_node() {
 
 
 
-    # Start the executor process with pm2
-    pm2 start ./executor/executor/bin/executor --name $NODE_PM2_NAME --log "$LOGFILE" --env NODE_ENV=$NODE_ENV --env LOG_LEVEL=$LOG_LEVEL --env LOG_PRETTY=$LOG_PRETTY --env ENABLED_NETWORKS=$ENABLED_NETWORKS --env PRIVATE_KEY_LOCAL="$PRIVATE_KEY_LOCAL";
+# Start the executor process with PM2
+pm2 start "$T3RN_DIR/executor/executor/bin/executor" \
+    --name "$NODE_PM2_NAME" \
+    --log "$LOGFILE" || {
+    echo -e "${RED}❌ Failed to start executor with PM2. Exiting.${RESET}"
+    exit 1
+}
 
-   
-
-    
-    echo -e "${GREEN}✅ Node installed successfully. Check the logs to confirm authentication.${RESET}"
-    read -p "Press Enter to return to the menu..."
+echo -e "${GREEN}✅ Executor started successfully with PM2.${RESET}"
 }
 
 
