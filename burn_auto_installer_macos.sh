@@ -103,7 +103,7 @@ install_node() {
 
     echo
     echo -e "${GREEN}🛠️  Installing node...${RESET}"
-    sudo apt -q update
+     brew update
     cd $HOME
     
 
