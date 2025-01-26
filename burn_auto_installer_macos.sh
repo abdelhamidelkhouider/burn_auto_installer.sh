@@ -81,7 +81,7 @@ install_node() {
 
     # Téléchargement et extraction
     echo -e "${CYAN}⬇️  Téléchargement de l'exécuteur...${RESET}"
-    curl -L -O "https://github.com/t3rn/executor-release/releases/download/v0.$VERSION.0/executor-macos-v0.$VERSION.0.tar.gz"
+    curl -L -O "https://github.com/t3rn/executor-release/releases/download/v0.$VERSION.0/executor-macosx-v0.$VERSION.0.tar.gz"
 
     echo -e "${YELLOW}🧰 Extraction du fichier...${RESET}"
     tar -xvzf "executor-macos-v0.$VERSION.0.tar.gz"
