@@ -1,0 +1,1 @@
+# burn_auto_installer.sh
