@@ -184,14 +184,45 @@ install_node() {
 
     
     
-    echo -e "${CYAN}⬇️   Downloading executor-macosx-v0.$VERSION.0-macosx.tar.gz${RESET}"
-    curl -L -O https://github.com/t3rn/executor-release/releases/download/v0.47.0/executor-macosx-v0.47.0.tar.gz;
-    echo
+# Download the executor file
+echo -e "${CYAN}⬇️   Downloading executor-macosx-v0.${VERSION}.0-macosx.tar.gz${RESET}"
+curl -L -O https://github.com/t3rn/executor-release/releases/download/v${VERSION}/executor-macosx-v0.${VERSION}.0-macosx.tar.gz
 
-    echo -e "${YELLOW}🧰 Extracting the file...${RESET}";
-    tar -xzf executor-macosx-v0.47.0-macosx.tar.gz || {
-    echo -e "${RED}❌ Extraction failed. Check the archive format.${RESET}"
+# Verify the downloaded file
+if [ $? -ne 0 ]; then
+    echo -e "${RED}❌ Failed to download executor-macosx-v0.${VERSION}.0-macosx.tar.gz. Please check your internet connection or the URL.${RESET}"
     exit 1
+fi
+
+# Check the file size to ensure the download is valid
+FILE_SIZE=$(stat -f%z executor-macosx-v0.${VERSION}.0-macosx.tar.gz 2>/dev/null || stat -c%s executor-macosx-v0.${VERSION}.0-macosx.tar.gz)
+if [ -z "$FILE_SIZE" ] || [ "$FILE_SIZE" -lt 1024 ]; then
+    echo -e "${RED}❌ Downloaded file is too small. Likely corrupted.${RESET}"
+    rm -f executor-macosx-v0.${VERSION}.0-macosx.tar.gz
+    exit 1
+fi
+
+echo -e "${GREEN}✅ File downloaded successfully.${RESET}"
+
+# Extract the file
+echo -e "${YELLOW}🧰 Extracting executor-macosx-v0.${VERSION}.0-macosx.tar.gz...${RESET}"
+tar -xzf executor-macosx-v0.${VERSION}.0-macosx.tar.gz || {
+    echo -e "${RED}❌ Extraction failed. Check the archive format.${RESET}"
+    file executor-macosx-v0.${VERSION}.0-macosx.tar.gz
+    exit 1
+}
+
+# Verify extraction success and binary existence
+if [ ! -d "executor" ] || [ ! -f "executor/executor/bin/executor" ]; then
+    echo -e "${RED}❌ Extraction failed. Executor binary not found after extraction.${RESET}"
+    exit 1
+else
+    echo -e "${GREEN}✅ Extraction successful. Executor binary found.${RESET}"
+fi
+
+# Cleanup
+rm -f executor-macosx-v0.${VERSION}.0-macosx.tar.gz
+
 }
 
     # Check if extraction was successful
