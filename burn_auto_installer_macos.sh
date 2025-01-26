@@ -67,7 +67,7 @@ install_node() {
     else
         echo -e "${RED}📂 Le dossier $T3RN_DIR existe déjà.${RESET}"
         rm -rf "$T3RN_DIR/executor"
-        rm -rf "$T3RN_DIR/executor-macos-v0.$VERSION.0.tar.gz"
+        rm -rf "$T3RN_DIR/executor-macosx-v0.$VERSION.0.tar.gz"
     fi
     cd "$T3RN_DIR"
 
@@ -84,7 +84,7 @@ install_node() {
     curl -L -O "https://github.com/t3rn/executor-release/releases/download/v0.$VERSION.0/executor-macosx-v0.$VERSION.0.tar.gz"
 
     echo -e "${YELLOW}🧰 Extraction du fichier...${RESET}"
-    tar -xvzf "executor-macos-v0.$VERSION.0.tar.gz"
+    tar -xvzf "executor-macosx-v0.$VERSION.0.tar.gz"
 
     if [ $? -ne 0 ]; then
         echo -e "${RED}❌ Échec de l'extraction.${RESET}"
