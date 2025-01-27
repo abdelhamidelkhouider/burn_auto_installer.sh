@@ -256,7 +256,7 @@ install_node() {
 	export EXECUTOR_PROCESS_BIDS_ENABLED=true
 	export EXECUTOR_PROCESS_BIDS_API_ENABLED=false
 	export ENABLE_PROCESSING_VIA_RPC=true
-	export EXECUTOR_MAX_L3_GAS_PRICE=2000
+	export EXECUTOR_MAX_L3_GAS_PRICE=3000
     export PRIVATE_KEY_LOCAL=$PRIVATE_KEY_LOCAL
     export ENABLED_NETWORKS='arbitrum-sepolia,base-sepolia,blast-sepolia,optimism-sepolia,l1rn'
 	export RPC_ENDPOINTS_ARBT='https://arbitrum-sepolia-rpc.publicnode.com/'
