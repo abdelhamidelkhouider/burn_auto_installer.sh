@@ -161,7 +161,7 @@ install_node() {
     export ENABLED_NETWORKS='arbitrum-sepolia,base-sepolia,blast-sepolia,optimism-sepolia,l1rn'
 	export RPC_ENDPOINTS_ARBT='https://arbitrum-sepolia-rpc.publicnode.com/'
     export RPC_ENDPOINTS_BSSP='https://base-sepolia-rpc.publicnode.com/'
-	export RPC_ENDPOINTS_BLSS='https://blast-sepolia.g.alchemy.com/v2/PJz_Lbwjmw2xzyEbSgFRz1NevTz2Nzex'
+	export RPC_ENDPOINTS_BLSS='https://sepolia.blast.io/'
     export RPC_ENDPOINTS_OPSP='https://sepolia.optimism.io/'
 	export RPC_ENDPOINTS_L1RN='https://brn.rpc.caldera.xyz/'
     export EXECUTOR_PROCESS_PENDING_ORDERS_FROM_API=false
