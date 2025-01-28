@@ -111,11 +111,11 @@ install_node() {
         pm2 delete executor
     fi
 
-    echo -e "${CYAN}⬇️   Downloading executor-macosx-v0.$VERSION.0.tar.gz${RESET}"
-    curl -L -O https://github.com/t3rn/executor-release/releases/download/v0.$VERSION.0/executor-macosx-v0.$VERSION.0.tar.gz
+    echo -e "${CYAN}⬇️   Downloading executor-linux-v0.$VERSION.0.tar.gz${RESET}"
+    curl -L -O https://github.com/t3rn/executor-release/releases/download/v0.$VERSION.0/executor-linux-v0.$VERSION.0.tar.gz
 
     echo -e "${YELLOW}🧰 Extracting the file...${RESET}"
-    tar -xvzf executor-macosx-v0.$VERSION.0.tar.gz
+    tar -xvzf executor-linux-v0.$VERSION.0.tar.gz
 
     # Check if extraction was successful
     if [ $? -eq 0 ]; then
