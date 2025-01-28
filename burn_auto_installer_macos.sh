@@ -19,16 +19,11 @@ ICON_REMOVE="🗑️"
 ICON_VIEW="👀"
 
 # Global variables
-PROJECT_NAME="t3rn"
+PROJCET_NAME="t3rn"
 VERSION=47
 T3RN_DIR="$HOME/t3rn"
 LOGFILE="$T3RN_DIR/executor.log"
 NODE_PM2_NAME="executor"
-
-# Function to check if a command exists
-command_exists() {
-    command -v "$1" &>/dev/null
-}
 
 # Draw menu borders and telegram icon
 draw_top_border() {
@@ -46,7 +41,7 @@ print_telegram_icon() {
 display_ascii() {
     echo -e "${RED}    ____  _       _    _ _           _       _           ${RESET}"    
     echo -e "${GREEN}   / ___|| | __ _| | _(_) |__   __ _| | __ _| |_ ___     ${RESET}" 
-    echo -e "${BLUE}   \\___ \\| |/ _\` | |/ / | '_ \\ / _\` | |/ _\` | __/ _ \\    ${RESET}"
+    echo -e "${BLUE}   \\___ \\| |/ _\ | |/ / | '_ \\ / _\ | |/ _\ | __/ _ \\    ${RESET}"
     echo -e "${YELLOW}    ___) | | (_| |   <| | | | | (_| | | (_| | ||  __/    ${RESET}"
     echo -e "${MAGENTA}   |____/|_|\\__,_|_|\\_\\_|_| |_|\\__,_|_|\\__,_|\\__\\___|    ${RESET}"
     echo -e "${CYAN}                                                     ${RESET}"       
@@ -61,7 +56,7 @@ show_menu() {
     print_telegram_icon
     echo -e "    ${BLUE}Subscribe to our channel: ${YELLOW}https://t.me/molfo9iya${RESET}"
     draw_middle_border
-    echo -e "                ${GREEN}Node Manager for ${PROJECT_NAME}${RESET}"
+    echo -e "                ${GREEN}Node Manager for ${PROJCET_NAME}${RESET}"
     echo -e "    ${YELLOW}Please choose an option:${RESET}"
     echo -e "    ${CYAN}1.${RESET} ${ICON_INSTALL}  Install Node"
     echo -e "    ${CYAN}2.${RESET} ${ICON_LOGS} View Logs"
@@ -89,15 +84,12 @@ install_node() {
     fi
 
     echo -e "${GREEN}🛠️  Installing node...${RESET}"
-
-    # Update packages (brew equivalent of apt update)
-    if ! command_exists brew; then
-        echo -e "${CYAN}⚙️  Homebrew is not installed. Installing Homebrew...${RESET}"
-        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-    else
-        echo -e "${GREEN}⚙️  Homebrew is already installed.${RESET}"
+    
+    # Update package manager (macOS uses brew)
+    if ! command -v brew &> /dev/null; then
+        echo -e "${RED}❌ Homebrew is not installed. Please install it first: https://brew.sh/${RESET}"
+        exit 1
     fi
-
     brew update
 
     # Create t3rn Folder
@@ -110,30 +102,38 @@ install_node() {
     fi
 
     # Check & Install pm2
-    if ! command_exists pm2; then
-        echo -e "${CYAN}⚙️  pm2 is not installed. Installing pm2...${RESET}"
+    if ! command -v pm2 &> /dev/null; then
+        echo -e "${CYAN}⚙️  pm2 is not installed. Processing installation${RESET}"
         npm install -g pm2
     else
-        echo -e "${GREEN}⚙️  pm2 is already installed.${RESET}"
-        pm2 stop $NODE_PM2_NAME
-        pm2 delete $NODE_PM2_NAME
+        echo -e "${RED}⚙️  pm2 already installed.${RESET}"
+        pm2 stop executor
+        pm2 delete executor
     fi
 
-    # Download and extract the executor
-    echo -e "${CYAN}⬇️  Downloading executor-macosx-v0.$VERSION.0.tar.gz${RESET}"
-    curl -L -O "https://github.com/t3rn/executor-release/releases/download/v0.$VERSION.0/executor-macosx-v0.$VERSION.0.tar.gz"
+    echo -e "${CYAN}⬇️   Downloading executor-macosx-v0.$VERSION.0.tar.gz${RESET}"
+    curl -L -O https://github.com/t3rn/executor-release/releases/download/v0.$VERSION.0/executor-macosx-v0.$VERSION.0.tar.gz
 
     echo -e "${YELLOW}🧰 Extracting the file...${RESET}"
-    tar -xvzf "executor-macosx-v0.$VERSION.0.tar.gz"
+    tar -xvzf executor-macosx-v0.$VERSION.0.tar.gz
 
+    # Check if extraction was successful
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}✅  Extraction successful.${RESET}"
     else
-        echo -e "${RED}❌  Extraction failed. Check the tar.gz file.${RESET}"
+        echo -e "${RED}❌  Extraction failed, please check the tar.gz file.${RESET}"
         exit 1
     fi
 
-    # Configure environment variables
+    # Check if the extracted files contain 'executor'
+    echo -e "${BLUE}⁉️  Checking if the extracted files or directories contain 'executor'...${RESET}"
+    if ls | grep -q 'executor'; then
+        echo -e "${GREEN}✅  Check passed, found files or directories containing 'executor'.${RESET}"
+    else
+        echo -e "${RED}❌  No files or directories containing 'executor' were found, possibly incorrect file name.${RESET}"
+        exit 1
+    fi
+
     echo -ne "${RED}🔑  Enter your EVM private key  [Burner Wallet]:${RESET} "
     read -s PRIVATE_KEY_LOCAL
     echo -e "\n${GREEN}✅ Private key has been set.${RESET}"
@@ -141,21 +141,40 @@ install_node() {
 
     export NODE_ENV=testnet
     export LOG_LEVEL=debug
-    export ENABLED_NETWORKS='arbitrum-sepolia,base-sepolia,blast-sepolia,optimism-sepolia,l1rn'
+    export LOG_PRETTY=false
+    export L3_NETWORK=l1rn
+    export L3_ENABLED=true
+    export PRICER_URL='https://pricer.t1rn.io/'
+    export PRICER_CORS_ORIGINS='http://localhost:5173,https://bridge.t1rn.io'
+    export EXECUTOR_PROCESS_ORDERS_ENABLED=true
+    export EXECUTOR_PROCESS_ORDERS_API_ENABLED=false
+    export EXECUTOR_PROCESS_CLAIMS_ENABLED=true
+    export EXECUTOR_PROCESS_CLAIMS_API_ENABLED=false
+    export EXECUTOR_PROCESS_BIDS_ENABLED=true
+    export EXECUTOR_PROCESS_BIDS_API_ENABLED=false
+    export ENABLE_PROCESSING_VIA_RPC=true
+    export EXECUTOR_MAX_L3_GAS_PRICE=2000
     export PRIVATE_KEY_LOCAL=$PRIVATE_KEY_LOCAL
+    export ENABLED_NETWORKS='arbitrum-sepolia,base-sepolia,blast-sepolia,optimism-sepolia,l1rn'
+    export RPC_ENDPOINTS_ARBT='https://arbitrum-sepolia-rpc.publicnode.com/'
+    export RPC_ENDPOINTS_BSSP='https://base-sepolia-rpc.publicnode.com/'
+    export RPC_ENDPOINTS_BLSS='https://blast-sepolia.g.alchemy.com/v2/PJz_Lbwjmw2xzyEbSgFRz1NevTz2Nzex'
+    export RPC_ENDPOINTS_OPSP='https://sepolia.optimism.io/'
+    export RPC_ENDPOINTS_L1RN='https://brn.rpc.caldera.xyz/'
+    export EXECUTOR_PROCESS_PENDING_ORDERS_FROM_API=false
+    export AWS_SDK_JS_SUPPRESS_MAINTENANCE_MODE_MESSAGE=1
 
-    # Start executor with pm2
-    pm2 start ./executor/executor/bin/executor --name $NODE_PM2_NAME --log "$LOGFILE"
+    # Start the executor process with pm2
+    pm2 start ./executor/executor/bin/executor --name $NODE_PM2_NAME --log "$LOGFILE" --env NODE_ENV=$NODE_ENV --env LOG_LEVEL=$LOG_LEVEL --env LOG_PRETTY=$LOG_PRETTY --env ENABLED_NETWORKS=$ENABLED_NETWORKS --env PRIVATE_KEY_LOCAL="$PRIVATE_KEY_LOCAL"
 
-    echo -e "${GREEN}✅ Node installed successfully.${RESET}"
+    echo -e "${GREEN}✅ Node installed successfully. Check the logs to confirm authentication.${RESET}"
     read -p "Press Enter to return to the menu..."
 }
-
 
 # View logs function
 view_logs() {
     echo -e "${GREEN}📄 Viewing logs...${RESET}"
-    tail -n 50 "$LOGFILE"
+    tail -n 50 $LOGFILE
     echo
     read -p "Press Enter to return to the menu..."
 }
@@ -163,7 +182,7 @@ view_logs() {
 # Restart node function
 restart_node() {
     echo -e "${GREEN}🔄 Restarting node...${RESET}"
-    pm2 restart "$NODE_PM2_NAME"
+    pm2 restart $NODE_PM2_NAME
     echo -e "${GREEN}✅ Node restarted.${RESET}"
     read -p "Press Enter to return to the menu..."
 }
@@ -171,7 +190,7 @@ restart_node() {
 # Stop node function
 stop_node() {
     echo -e "${GREEN}⏹️ Stopping node...${RESET}"
-    pm2 stop "$NODE_PM2_NAME"
+    pm2 stop $NODE_PM2_NAME
     echo -e "${GREEN}✅ Node stopped.${RESET}"
     read -p "Press Enter to return to the menu..."
 }
@@ -179,15 +198,15 @@ stop_node() {
 # Start node function
 start_node() {
     echo -e "${GREEN}▶️ Starting node...${RESET}"
-    pm2 start "$NODE_PM2_NAME"
+    pm2 start $NODE_PM2_NAME
     echo -e "${GREEN}✅ Node started.${RESET}"
     read -p "Press Enter to return to the menu..."
 }
 
 # Remove node function
 remove_node() {
-    echo -e "${GREEN}🗑️ Removing node...${RESET}"
-    pm2 delete "$NODE_PM2_NAME"
+    echo -e "${GREEN}▶️ Removing node...${RESET}"
+    pm2 delete $NODE_PM2_NAME
     echo -e "${GREEN}✅ Node removed.${RESET}"
     read -p "Press Enter to return to the menu..."
 }
@@ -224,4 +243,3 @@ while true; do
             ;;
     esac
 done
-
